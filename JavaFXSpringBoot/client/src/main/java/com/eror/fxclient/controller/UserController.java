@@ -20,158 +20,194 @@ import javafx.scene.image.ImageView;
 import javafx.util.Callback;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Lazy;
+import org.springframework.http.*;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.ResourceBundle;
+import java.util.*;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 @Controller
 public class UserController implements Initializable {
-	private Map authMap;
+    private Map authMap;
+    private String token;
+    private String auth;
+    private String bearer;
+    private String tokenWithBearer;
+
+    @FXML
+    private Button company;
+
+    @FXML
+    private Button btnLogout;
+
+    @FXML
+    private Label userId;
+
+    @FXML
+    private Label usersName;
+
+    @FXML
+    private TextField firstName;
+
+    @FXML
+    private TextField lastName;
+
+    @FXML
+    private DatePicker dob;
+
+    @FXML
+    private RadioButton rbMale;
+
+    @FXML
+    private ToggleGroup gender;
+
+    @FXML
+    private RadioButton rbFemale;
+
+    @FXML
+    private ComboBox<Role> cbRole;
+    Callback<TableColumn<User, Boolean>, TableCell<User, Boolean>> cellFactory =
+            new Callback<TableColumn<User, Boolean>, TableCell<User, Boolean>>() {
+                @Override
+                public TableCell<User, Boolean> call(final TableColumn<User, Boolean> param) {
+                    final TableCell<User, Boolean> cell = new TableCell<User, Boolean>() {
+                        final Button btnEdit = new Button();
+                        Image imgEdit = new Image(getClass().getResourceAsStream("/images/edit.png"));
+
+                        @Override
+                        public void updateItem(Boolean check, boolean empty) {
+                            super.updateItem(check, empty);
+                            if (empty) {
+                                setGraphic(null);
+                                setText(null);
+                            } else {
+                                // Here we select collumn from table to get selected User
+                                btnEdit.setOnAction(e -> {
+                                    User user = getTableView().getItems().get(getIndex());
+                                    updateUser(user);
+                                });
+
+                                btnEdit.setStyle("-fx-background-color: transparent;");
+                                ImageView iv = new ImageView();
+                                iv.setImage(imgEdit);
+                                iv.setPreserveRatio(true);
+                                iv.setSmooth(true);
+                                iv.setCache(true);
+                                btnEdit.setGraphic(iv);
+
+                                setGraphic(btnEdit);
+                                setAlignment(Pos.CENTER);
+                                setText(null);
+                            }
+                        }
+
+                        private void updateUser(User user) {
+                            userId.setText(Long.toString(user.getId()));
+                            firstName.setText(user.getName());
+                            lastName.setText(user.getSurname());
 
 
-	@FXML
-	private Button company;
+                            cbRole.getSelectionModel().select(user.getRole());
+                        }
+                    };
+                    return cell;
+                }
+            };
+    @FXML
+    private TextField email;
+    @FXML
+    private PasswordField password;
+    @FXML
+    private Button reset;
+    @FXML
+    private Button saveUser;
+    @FXML
+    private TableView<User> userTable;
+    @FXML
+    private TableColumn<User, Long> colUserId;
+    @FXML
+    private TableColumn<User, String> colFirstName;
+    @FXML
+    private TableColumn<User, String> colLastName;
+    @FXML
+    private TableColumn<User, LocalDate> colDOB;
+    @FXML
+    private TableColumn<User, String> colGender;
+    @FXML
+    private TableColumn<User, String> colRole;
+    @FXML
+    private TableColumn<User, String> colEmail;
+    @FXML
+    private TableColumn<User, Boolean> colEdit;
+    @FXML
+    private MenuItem deleteUsers;
 
-	@FXML
-	private Button btnLogout;
-
-	@FXML
-	private Label userId;
-
-	@FXML
-	private Label usersName;
-
-	@FXML
-	private TextField firstName;
-
-	@FXML
-	private TextField lastName;
-
-	@FXML
-	private DatePicker dob;
-
-	@FXML
-	private RadioButton rbMale;
-
-	@FXML
-	private ToggleGroup gender;
-
-	@FXML
-	private RadioButton rbFemale;
-
-	@FXML
-	private ComboBox<Role> cbRole;
-
-	@FXML
-	private TextField email;
-
-	@FXML
-	private PasswordField password;
-
-	@FXML
-	private Button reset;
-
-	@FXML
-	private Button saveUser;
-
-	@FXML
-	private TableView<User> userTable;
-
-	@FXML
-	private TableColumn<User, Long> colUserId;
-
-	@FXML
-	private TableColumn<User, String> colFirstName;
-
-	@FXML
-	private TableColumn<User, String> colLastName;
-
-	@FXML
-	private TableColumn<User, LocalDate> colDOB;
-
-	@FXML
-	private TableColumn<User, String> colGender;
-
-	@FXML
-	private TableColumn<User, String> colRole;
-
-	@FXML
-	private TableColumn<User, String> colEmail;
-
-	@FXML
-	private TableColumn<User, Boolean> colEdit;
-
-	@FXML
-	private MenuItem deleteUsers;
-
-	@Lazy
-	@Autowired
-	private StageManager stageManager;
-
-//	@Autowired
+    //	@Autowired
 //	private UserService userService;
 //
 //	@Autowired
 //	private RoleService roleService;
 //	@Autowired
 //	private CompanyService companyService;
+    @Lazy
+    @Autowired
+    private StageManager stageManager;
+    private ObservableList<User> userList = FXCollections.observableArrayList();
+    //	private ObservableList<String> roles = FXCollections.observableArrayList("Admin", "User");
+    private ObservableList<Role> roles = FXCollections.observableArrayList();
 
-	private ObservableList<User> userList = FXCollections.observableArrayList();
-	//	private ObservableList<String> roles = FXCollections.observableArrayList("Admin", "User");
-	private ObservableList<Role> roles = FXCollections.observableArrayList();
+    @FXML
+    private void exit(ActionEvent event) {
+        Platform.exit();
+    }
 
-	@FXML
-	private void exit(ActionEvent event) {
-		Platform.exit();
-	}
+    /**
+     * Logout and go to the login page
+     */
+    @FXML
+    private void logout(ActionEvent event) throws IOException {
+        stageManager.switchScene(FxmlView.LOGIN);
+    }
 
-	/**
-	 * Logout and go to the login page
-	 */
-	@FXML
-	private void logout(ActionEvent event) throws IOException {
-		stageManager.switchScene(FxmlView.LOGIN);
-	}
+    @FXML
+    void reset(ActionEvent event) {
+        clearFields();
+    }
 
+    @FXML
+    private void saveUser(ActionEvent event) throws IOException {
 
-	@FXML
-	void reset(ActionEvent event) {
-		clearFields();
-	}
+        if (validate("First Name", getFirstName(), "[a-zA-Z]+") &&
+                validate("Last Name", getLastName(), "[a-zA-Z]+"))
+//                &&
+//                emptyValidation("DOB", dob.getEditor().getText().isEmpty()) &&
+//                emptyValidation("Role", getRole() == null))
+        {
 
-	@FXML
-	private void saveUser(ActionEvent event) {
+            if (userId.getText() == null || userId.getText() == "") {
+                if (validate("Email", getEmail(), "[a-zA-Z0-9][a-zA-Z0-9._]*@[a-zA-Z0-9]+([.][a-zA-Z]+)+") &&
+                        emptyValidation("Password", getPassword().isEmpty())) {
 
-		if (validate("First Name", getFirstName(), "[a-zA-Z]+") &&
-				validate("Last Name", getLastName(), "[a-zA-Z]+") &&
-				emptyValidation("DOB", dob.getEditor().getText().isEmpty()) &&
-				emptyValidation("Role", getRole() == null)) {
-
-			if (userId.getText() == null || userId.getText() == "") {
-				if (validate("Email", getEmail(), "[a-zA-Z0-9][a-zA-Z0-9._]*@[a-zA-Z0-9]+([.][a-zA-Z]+)+") &&
-						emptyValidation("Password", getPassword().isEmpty())) {
-
-					User user = new User();
-					user.setName(getFirstName());
-					user.setSurname(getLastName());
-					user.setRole(getRole());
-					user.setEmail(getEmail());
-					user.setPassword(getPassword());
-
+                    User user = new User();
+                    user.setName(getFirstName());
+                    user.setSurname(getLastName());
+                    user.setUsername(getFirstName());
+//                    user.setRole(getRole());
+                    user.setEmail(getEmail());
+                    user.setPassword(getPassword());
+                    String msg = saveUser(user);
+                    assert msg != null;
+                    saveAlert(msg);
 //        			User newUser = userService.save(user);
-//
-//        			saveAlert(newUser);
-				}
 
-			} else {
+                }
+
+            } else {
 //    			User user = userService.find(Long.parseLong(userId.getText()));
 //    			user.setFirstName(getFirstName());
 //    			user.setLastName(getLastName());
@@ -180,123 +216,183 @@ public class UserController implements Initializable {
 //    			user.setRole(getRole());
 //    			User updatedUser =  userService.update(user);
 //    			updateAlert(updatedUser);
-			}
+            }
 //    		setUsersName();
-			clearFields();
-			loadUserDetails();
-		}
+            clearFields();
+            loadUserDetails();
+        }
 
 
-	}
+    }
 
-	@FXML
-	private void deleteUsers(ActionEvent event) {
-		List<User> users = userTable.getSelectionModel().getSelectedItems();
+    private String saveUser(User user) throws IOException {
+        try {
+            String url = "http://localhost:8082/api/auth/signup";
+            RestTemplate restTemplate = new RestTemplate();
+// create headers
+            HttpHeaders headers = new HttpHeaders();
+// set `content-type` header
+            headers.setContentType(MediaType.APPLICATION_JSON);
+// set `accept` header
+            headers.setAccept(Collections.singletonList(MediaType.APPLICATION_JSON));
+            headers.setBearerAuth(tokenWithBearer);
+// request body parameters
 
-		Alert alert = new Alert(AlertType.CONFIRMATION);
-		alert.setTitle("Confirmation Dialog");
-		alert.setHeaderText(null);
-		alert.setContentText("Are you sure you want to delete selected?");
-		Optional<ButtonType> action = alert.showAndWait();
+// build the request
+            HttpEntity<User> entity = new HttpEntity<>(user, headers);
+// send POST request
+            ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
+            String msg = new String();
+// check response
+            if (response.getStatusCode() == HttpStatus.OK) {
+                System.out.println("Request Successful");
+                System.out.println(response.getBody());
+                msg = response.getBody();
+
+            } else {
+                System.out.println("Request Failed");
+                System.out.println(response.getStatusCode());
+
+            }
+            return msg;
+        } catch (Exception ex) {
+            System.out.println("Request Failed");
+            System.out.println(ex);
+            return null;
+        }
+    }
+
+    @FXML
+    private void deleteUsers(ActionEvent event) {
+        List<User> users = userTable.getSelectionModel().getSelectedItems();
+
+        Alert alert = new Alert(AlertType.CONFIRMATION);
+        alert.setTitle("Confirmation Dialog");
+        alert.setHeaderText(null);
+        alert.setContentText("Are you sure you want to delete selected?");
+        Optional<ButtonType> action = alert.showAndWait();
 
 //		if(action.get() == ButtonType.OK) userService.deleteInBatch(users);
 
-		loadUserDetails();
-	}
+        loadUserDetails();
+    }
 
-	private void clearFields() {
-		userId.setText(null);
-		firstName.clear();
-		lastName.clear();
-		dob.getEditor().clear();
-		rbMale.setSelected(true);
-		rbFemale.setSelected(false);
-		cbRole.getSelectionModel().clearSelection();
-		email.clear();
-		password.clear();
-	}
+    private void clearFields() {
+        userId.setText(null);
+        firstName.clear();
+        lastName.clear();
+        dob.getEditor().clear();
+        rbMale.setSelected(true);
+        rbFemale.setSelected(false);
+        cbRole.getSelectionModel().clearSelection();
+        email.clear();
+        password.clear();
+    }
 
-	private void saveAlert(User user) {
+    private void saveAlert(User user) {
 
-		Alert alert = new Alert(AlertType.INFORMATION);
-		alert.setTitle("User saved successfully.");
-		alert.setHeaderText(null);
-		alert.setContentText("The user " + user.getName() + " " + user.getSurname() + " has been created and \n" + " id is " + user.getId() + ".");
-		alert.showAndWait();
-	}
+        Alert alert = new Alert(AlertType.INFORMATION);
+        alert.setTitle("User saved successfully.");
+        alert.setHeaderText(null);
+        alert.setContentText("The user " + user.getName() + " " + user.getSurname() + " has been created and \n" + " id is " + user.getId() + ".");
+        alert.showAndWait();
+    }
 
-	private void updateAlert(User user) {
+    private void saveAlert(String msg) {
 
-		Alert alert = new Alert(AlertType.INFORMATION);
-		alert.setTitle("User updated successfully.");
-		alert.setHeaderText(null);
-		alert.setContentText("The user " + user.getName() + " " + user.getSurname() + " has been updated.");
-		alert.showAndWait();
-	}
+        Alert alert = new Alert(AlertType.INFORMATION);
+        alert.setTitle("User saved successfully.");
+        alert.setHeaderText(null);
+        alert.setContentText("The user has been created successfully.");
+        alert.showAndWait();
+    }
 
-	private String getGenderTitle(String gender) {
-		return (gender.equals("Male")) ? "his" : "her";
-	}
+    private void updateAlert(User user) {
 
-	public String getFirstName() {
-		return firstName.getText();
-	}
+        Alert alert = new Alert(AlertType.INFORMATION);
+        alert.setTitle("User updated successfully.");
+        alert.setHeaderText(null);
+        alert.setContentText("The user " + user.getName() + " " + user.getSurname() + " has been updated.");
+        alert.showAndWait();
+    }
 
-	public String getLastName() {
-		return lastName.getText();
-	}
+    private String getGenderTitle(String gender) {
+        return (gender.equals("Male")) ? "his" : "her";
+    }
 
-	public LocalDate getDob() {
-		return dob.getValue();
-	}
+    public String getFirstName() {
+        return firstName.getText();
+    }
 
-	public String getGender() {
-		return rbMale.isSelected() ? "Male" : "Female";
-	}
+    public String getLastName() {
+        return lastName.getText();
+    }
 
-	public Role getRole() {
-		return cbRole.getSelectionModel().getSelectedItem();
-	}
+    public LocalDate getDob() {
+        return dob.getValue();
+    }
 
-	public String getEmail() {
-		return email.getText();
-	}
+    public String getGender() {
+        return rbMale.isSelected() ? "Male" : "Female";
+    }
 
-	public String getPassword() {
-		return password.getText();
-	}
+    public Role getRole() {
+        return cbRole.getSelectionModel().getSelectedItem();
+    }
+
+    public String getEmail() {
+        return email.getText();
+    }
+
+    public String getPassword() {
+        return password.getText();
+    }
+
+    @Override
+    public void initialize(URL location, ResourceBundle resources) {
+        setAuthMap(stageManager.getUser());
+        Map jsonMap = authMap;
+        System.out.println(jsonMap);
+        String usernameJson = jsonMap.get("username").toString();
+        System.out.println("username is: " + usernameJson);
+        String bearer = jsonMap.get("tokenType").toString();
+        System.out.println(bearer);
+        token = jsonMap.get("accessToken").toString();
+        System.out.println("Token is: " + token);
+        tokenWithBearer = bearer + " " + token;
+        System.out.println(tokenWithBearer);
+        ArrayList authorityList = ((ArrayList) jsonMap.get("authorities"));
+        Map authMap = (Map) authorityList.get(0);
+        auth = (String) authMap.get("authority");
+        System.out.println("Authority is: " + auth);
 
 
-	@Override
-	public void initialize(URL location, ResourceBundle resources) {
-		setAuthMap(stageManager.getUser());
 //		setUsersName();
 //		roles.addAll(roleService.findAll());
 //		List<Company> companies=companyService.findAll();
-		cbRole.setItems(roles);
+        cbRole.setItems(roles);
 
-		userTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        userTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
 
-		setColumnProperties();
+        setColumnProperties();
 
-		// Add all users into table
-		loadUserDetails();
-	}
-
-	private void setAuthMap(Map user) {
-		System.out.println(user.toString());
-		authMap = user;
-	}
+        // Add all users into table
+        loadUserDetails();
+    }
 
 //	private void setUsersName() {
 //		usersName.setText(getUser().getFirstName()+" "+getUser().getLastName());
 //	}
 
+    private void setAuthMap(Map user) {
+        System.out.println(user.toString());
+        authMap = user;
+    }
 
-	/*
-	 *  Set All userTable column properties
-	 */
-	private void setColumnProperties() {
+    /*
+     *  Set All userTable column properties
+     */
+    private void setColumnProperties() {
 //		Override date format in table
 //		 colDOB.setCellFactory(TextFieldTableCell.forTableColumn(new StringConverter<LocalDate>() {
 //
@@ -322,113 +418,64 @@ public class UserController implements Initializable {
 //		 }));
 
 
-		colUserId.setCellValueFactory(new PropertyValueFactory<>("id"));
-		colFirstName.setCellValueFactory(new PropertyValueFactory<>("firstName"));
-		colLastName.setCellValueFactory(new PropertyValueFactory<>("lastName"));
-		colDOB.setCellValueFactory(new PropertyValueFactory<>("dob"));
-		colGender.setCellValueFactory(new PropertyValueFactory<>("gender"));
-		colRole.setCellValueFactory(new PropertyValueFactory<>("role"));
-		colEmail.setCellValueFactory(new PropertyValueFactory<>("email"));
-		colEdit.setCellFactory(cellFactory);
-	}
+        colUserId.setCellValueFactory(new PropertyValueFactory<>("id"));
+        colFirstName.setCellValueFactory(new PropertyValueFactory<>("firstName"));
+        colLastName.setCellValueFactory(new PropertyValueFactory<>("lastName"));
+        colDOB.setCellValueFactory(new PropertyValueFactory<>("dob"));
+        colGender.setCellValueFactory(new PropertyValueFactory<>("gender"));
+        colRole.setCellValueFactory(new PropertyValueFactory<>("role"));
+        colEmail.setCellValueFactory(new PropertyValueFactory<>("email"));
+        colEdit.setCellFactory(cellFactory);
+    }
 
-	Callback<TableColumn<User, Boolean>, TableCell<User, Boolean>> cellFactory =
-			new Callback<TableColumn<User, Boolean>, TableCell<User, Boolean>>() {
-				@Override
-				public TableCell<User, Boolean> call(final TableColumn<User, Boolean> param) {
-					final TableCell<User, Boolean> cell = new TableCell<User, Boolean>() {
-						Image imgEdit = new Image(getClass().getResourceAsStream("/images/edit.png"));
-						final Button btnEdit = new Button();
-
-						@Override
-						public void updateItem(Boolean check, boolean empty) {
-							super.updateItem(check, empty);
-							if (empty) {
-								setGraphic(null);
-								setText(null);
-							} else {
-								// Here we select collumn from table to get selected User
-								btnEdit.setOnAction(e -> {
-									User user = getTableView().getItems().get(getIndex());
-									updateUser(user);
-								});
-
-								btnEdit.setStyle("-fx-background-color: transparent;");
-								ImageView iv = new ImageView();
-								iv.setImage(imgEdit);
-								iv.setPreserveRatio(true);
-								iv.setSmooth(true);
-								iv.setCache(true);
-								btnEdit.setGraphic(iv);
-
-								setGraphic(btnEdit);
-								setAlignment(Pos.CENTER);
-								setText(null);
-							}
-						}
-
-						private void updateUser(User user) {
-							userId.setText(Long.toString(user.getId()));
-							firstName.setText(user.getName());
-							lastName.setText(user.getSurname());
-
-
-							cbRole.getSelectionModel().select(user.getRole());
-						}
-					};
-					return cell;
-				}
-			};
-
-
-	/*
-	 *  Add All users to observable list and update table
-	 */
-	private void loadUserDetails() {
-		userList.clear();
+    /*
+     *  Add All users to observable list and update table
+     */
+    private void loadUserDetails() {
+        userList.clear();
 //		userList.addAll(userService.findAll());
-		userTable.setItems(userList);
-	}
+        userTable.setItems(userList);
+    }
 
-	/*
-	 * Validations
-	 */
-	private boolean validate(String field, String value, String pattern) {
-		if (!value.isEmpty()) {
-			Pattern p = Pattern.compile(pattern);
-			Matcher m = p.matcher(value);
-			if (m.find() && m.group().equals(value)) {
-				return true;
-			} else {
-				validationAlert(field, false);
-				return false;
-			}
-		} else {
-			validationAlert(field, true);
-			return false;
-		}
-	}
+    /*
+     * Validations
+     */
+    private boolean validate(String field, String value, String pattern) {
+        if (!value.isEmpty()) {
+            Pattern p = Pattern.compile(pattern);
+            Matcher m = p.matcher(value);
+            if (m.find() && m.group().equals(value)) {
+                return true;
+            } else {
+                validationAlert(field, false);
+                return false;
+            }
+        } else {
+            validationAlert(field, true);
+            return false;
+        }
+    }
 
-	private boolean emptyValidation(String field, boolean empty) {
-		if (!empty) {
-			return true;
-		} else {
-			validationAlert(field, true);
-			return false;
-		}
-	}
+    private boolean emptyValidation(String field, boolean empty) {
+        if (!empty) {
+            return true;
+        } else {
+            validationAlert(field, true);
+            return false;
+        }
+    }
 
-	private void validationAlert(String field, boolean empty) {
-		Alert alert = new Alert(AlertType.WARNING);
-		alert.setTitle("Validation Error");
-		alert.setHeaderText(null);
-		if (field.equals("Role")) alert.setContentText("Please Select " + field);
-		else {
-			if (empty) alert.setContentText("Please Enter " + field);
-			else alert.setContentText("Please Enter Valid " + field);
-		}
-		alert.showAndWait();
-	}
+    private void validationAlert(String field, boolean empty) {
+        Alert alert = new Alert(AlertType.WARNING);
+        alert.setTitle("Validation Error");
+        alert.setHeaderText(null);
+        if (field.equals("Role")) alert.setContentText("Please Select " + field);
+        else {
+            if (empty) alert.setContentText("Please Enter " + field);
+            else alert.setContentText("Please Enter Valid " + field);
+        }
+        alert.showAndWait();
+    }
 
 //	public User getUser() {
 //		return user;

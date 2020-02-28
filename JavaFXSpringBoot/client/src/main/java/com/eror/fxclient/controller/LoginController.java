@@ -106,8 +106,7 @@ public class LoginController implements Initializable {
                 String auth = (String) authMap.get("authority");
                 System.out.println("Authority is: " + auth);
                 lblLogin.setText("Login Success.");
-                User loggedUser = new User();
-                loggedUser.setUsername(usernameJson);
+
                 stageManager.setUser(jsonMap);
                 stageManager.switchScene(FxmlView.USER);
             } else {

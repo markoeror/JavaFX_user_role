@@ -124,14 +124,4 @@ public class User {
     }
 
 
-//    //Methods for synchronisation adding and removing tasks from user
-//    public void addTask(Task task) {
-//        taskSet.add(task);
-//        task.setUser(this);
-//    }
-//
-//    public void removeTask(Task task) {
-//        taskSet.remove(task);
-//        task.setUser(null);
-//    }
 }
