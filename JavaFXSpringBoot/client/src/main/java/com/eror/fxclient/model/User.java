@@ -4,35 +4,30 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.time.LocalDate;
-
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
 
 public class User {
 
-	private long id;
+    private long id;
 
-	private String username;
-	private String firstName;
+    private String name;
 
-	private String lastName;
+    private String surname;
 
-	private LocalDate dob;
+    private String username;
 
-	private String gender;
+    private String email;
 
-	private Role role;
+    private String password;
 
-	private String email;
+    private Role role;
 
-	private String password;
-
-	public User(String username, String password) {
-		this.username = username;
-		this.password = password;
-	}
+    public User(String username, String password) {
+        this.username = username;
+        this.password = password;
+    }
 
 //	@Override
 //	public String toString() {

@@ -5,6 +5,7 @@ import com.codesnippets4all.json.parsers.JSONParser;
 import com.codesnippets4all.json.parsers.JsonParserFactory;
 import com.eror.fxclient.config.StageManager;
 import com.eror.fxclient.model.User;
+import com.eror.fxclient.view.FxmlView;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
 import javafx.fxml.Initializable;
@@ -52,7 +53,7 @@ public class LoginController implements Initializable {
         User user = new User(getUsername(), getPassword());
 //        User dummyuserFromApi= getDummyUser();
         getTokenAuthorisation(getUsername(), getPassword());
-        lblLogin.setText("Login OK.");
+
 
     }
 
@@ -85,12 +86,13 @@ public class LoginController implements Initializable {
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(map, headers);
 // send POST request
             ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
-
 // check response
             if (response.getStatusCode() == HttpStatus.OK) {
                 System.out.println("Request Successful");
-                String json = response.getBody();
                 System.out.println(response.getBody());
+
+                // parsing JSON String from api
+
                 JsonParserFactory factory = JsonParserFactory.getInstance();
                 JSONParser parser = factory.newJsonParser();
                 Map jsonMap = parser.parseJson(Objects.requireNonNull(response.getBody()));
@@ -103,13 +105,16 @@ public class LoginController implements Initializable {
                 Map authMap = (Map) authorityList.get(0);
                 String auth = (String) authMap.get("authority");
                 System.out.println("Authority is: " + auth);
-
-
+                lblLogin.setText("Login Success.");
+                User loggedUser = new User();
+                loggedUser.setUsername(usernameJson);
+                stageManager.setUser(jsonMap);
+                stageManager.switchScene(FxmlView.USER);
             } else {
                 System.out.println("Request Failed");
                 System.out.println(response.getStatusCode());
+                lblLogin.setText("Login Failed.");
             }
-            assert response != null;
             return response;
         } catch (Exception ex) {
             System.out.println("Request Failed");
@@ -125,45 +130,13 @@ public class LoginController implements Initializable {
 
             ResponseEntity<User> response =
                     restTemplate.getForEntity(
-                            "http://localhost:8085/getUser",
+                            "http://localhost:8082/getUser",
                             User.class);
             User user = response.getBody();
             assert user != null;
             System.out.println(user.toString());
 
             return user;
-//            final ObjectMapper objectMapper = new ObjectMapper();
-//            final String uri = "http://localhost:8082/getUser";
-//            RestTemplate  restTemplate = new RestTemplate();
-//            HttpHeaders headers = new HttpHeaders();
-//            headers.setContentType(MediaType.APPLICATION_JSON);
-//
-//            JSONObject personJsonObject = new JSONObject();
-//            try{
-//            personJsonObject.put("username",username);
-//            personJsonObject.put("password",password);
-//
-//                HttpEntity<String> request =
-//                        new HttpEntity<String>(personJsonObject.toString(), headers);
-//
-//                restTemplate.postForObject(
-//                        uri,
-//                        request,
-//                        ResponseEntity.class);
-//
-//
-//            } catch (JSONException e) {
-//            e.printStackTrace();
-//        }
-////            Map<String, User> params = new HashMap<>();
-////            params.put("user", user);
-////
-////
-////            RestTemplate restTemplate = new RestTemplate();
-//////            MultiplicationDTO result = restTemplate.getForObject(uri, MultiplicationDTO.class, params);
-////            ResponseEntity<User> result = restTemplate.postForEntity(uri,user, User.class );
-//            System.out.println(user);
-//            return user;
         } catch (Exception ex) {
             System.out.println(ex);
             return null;

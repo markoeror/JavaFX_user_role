@@ -8,6 +8,7 @@ import javafx.scene.Scene;
 import javafx.stage.Stage;
 import org.slf4j.Logger;
 
+import java.util.Map;
 import java.util.Objects;
 
 import static org.slf4j.LoggerFactory.getLogger;
@@ -26,12 +27,14 @@ public class StageManager {
         this.primaryStage = stage;
     }
 
-    //    public void setUser(User user){
-//        primaryStage.setUserData(user);
-//    }
-//    public User getUser(){
-//        return (User) primaryStage.getUserData();
-//    }
+    public Map getUser() {
+        return (Map) primaryStage.getUserData();
+    }
+
+    public void setUser(Map map) {
+        primaryStage.setUserData(map);
+    }
+
     public void switchScene(final FxmlView view) {
         Parent viewRootNodeHierarchy = loadViewNodeHierarchy(view.getFxmlFile());
         show(viewRootNodeHierarchy, view.getTitle());

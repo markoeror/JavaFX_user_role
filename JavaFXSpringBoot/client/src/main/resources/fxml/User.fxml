@@ -7,7 +7,7 @@
 <?import javafx.scene.text.*?>
 <BorderPane prefHeight="600.0" prefWidth="1000.0" stylesheets="@../styles/Styles.css"
             xmlns="http://javafx.com/javafx/8.0.111" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.eror.controller.UserController">
+            fx:controller="com.eror.fxclient.controller.UserController">
     <top>
         <MenuBar BorderPane.alignment="TOP_LEFT">
             <menus>

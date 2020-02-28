@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.net.URL;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.ResourceBundle;
 import java.util.regex.Matcher;
@@ -33,7 +34,7 @@ import java.util.regex.Pattern;
 
 @Controller
 public class UserController implements Initializable {
-//	private User user;
+	private Map authMap;
 
 
 	@FXML
@@ -159,10 +160,8 @@ public class UserController implements Initializable {
 						emptyValidation("Password", getPassword().isEmpty())) {
 
 					User user = new User();
-					user.setFirstName(getFirstName());
-					user.setLastName(getLastName());
-					user.setDob(getDob());
-					user.setGender(getGender());
+					user.setName(getFirstName());
+					user.setSurname(getLastName());
 					user.setRole(getRole());
 					user.setEmail(getEmail());
 					user.setPassword(getPassword());
@@ -222,7 +221,7 @@ public class UserController implements Initializable {
 		Alert alert = new Alert(AlertType.INFORMATION);
 		alert.setTitle("User saved successfully.");
 		alert.setHeaderText(null);
-		alert.setContentText("The user " + user.getFirstName() + " " + user.getLastName() + " has been created and \n" + getGenderTitle(user.getGender()) + " id is " + user.getId() + ".");
+		alert.setContentText("The user " + user.getName() + " " + user.getSurname() + " has been created and \n" + " id is " + user.getId() + ".");
 		alert.showAndWait();
 	}
 
@@ -231,7 +230,7 @@ public class UserController implements Initializable {
 		Alert alert = new Alert(AlertType.INFORMATION);
 		alert.setTitle("User updated successfully.");
 		alert.setHeaderText(null);
-		alert.setContentText("The user " + user.getFirstName() + " " + user.getLastName() + " has been updated.");
+		alert.setContentText("The user " + user.getName() + " " + user.getSurname() + " has been updated.");
 		alert.showAndWait();
 	}
 
@@ -270,7 +269,7 @@ public class UserController implements Initializable {
 
 	@Override
 	public void initialize(URL location, ResourceBundle resources) {
-//		setUser(stageManager.getUser());
+		setAuthMap(stageManager.getUser());
 //		setUsersName();
 //		roles.addAll(roleService.findAll());
 //		List<Company> companies=companyService.findAll();
@@ -282,6 +281,11 @@ public class UserController implements Initializable {
 
 		// Add all users into table
 		loadUserDetails();
+	}
+
+	private void setAuthMap(Map user) {
+		System.out.println(user.toString());
+		authMap = user;
 	}
 
 //	private void setUsersName() {
@@ -365,11 +369,10 @@ public class UserController implements Initializable {
 
 						private void updateUser(User user) {
 							userId.setText(Long.toString(user.getId()));
-							firstName.setText(user.getFirstName());
-							lastName.setText(user.getLastName());
-							dob.setValue(user.getDob());
-							if (user.getGender().equals("Male")) rbMale.setSelected(true);
-							else rbFemale.setSelected(true);
+							firstName.setText(user.getName());
+							lastName.setText(user.getSurname());
+
+
 							cbRole.getSelectionModel().select(user.getRole());
 						}
 					};
